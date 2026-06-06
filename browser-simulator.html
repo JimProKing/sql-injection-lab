@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>SQL Injection Browser Simulator (Zero Setup)</title>
+<title>SQL 인젝션 브라우저 시뮬레이터</title>
 <style>
 body { font-family: monospace; max-width: 1100px; margin: 30px auto; background: #fafafa; }
 h1 { color: #222; }
@@ -19,8 +19,8 @@ th { background: #eee; }
 </head>
 <body>
 
-<h1>SQL Injection Interactive Simulator</h1>
-<p>서버 없이 브라우저에서 직접 SQL 인젝션 동작을 시뫄레이션합니다. 실제 DB가 아니라 JavaScript로 흙내 냅니다.</p>
+<h1>SQL 인젝션 인터랙티브 시뮬레이터</h1>
+<p>서버 없이 브라우저에서 직접 SQL 인젝션 동작을 시뮬레이션합니다. 실제 DB가 아니라 JavaScript로 흉내 냅니다.</p>
 
 <!-- ==================== LOGIN ==================== -->
 <div class="section">
@@ -83,7 +83,7 @@ th { background: #eee; }
        <button onclick="simulateBlind()">실행</button></p>
 
     <p><strong>자동 추출 데모 (admin 비밀번호 첫 글자 맞추기):</strong></p>
-    <button onclick="autoExtract()">admin 비밀번호 1글자씩 자동 추출 (시뫄레이션)</button>
+    <button onclick="autoExtract()">admin 비밀번호 1글자씩 자동 추출 (시뮬레이션)</button>
     <div id="blind-log" style="background:#222;color:#0f0;padding:10px;margin-top:10px;height:120px;overflow:auto;font-size:13px"></div>
   </div>
 </div>
@@ -268,7 +268,7 @@ function simulateBlind() {
 
 function autoExtract() {
   const log = document.getElementById('blind-log');
-  log.innerHTML = "admin 비밀번호 자동 추출 시뫄레이션 시작...<br>";
+  log.innerHTML = "admin 비밀번호 자동 추출 시뮬레이션 시작...<br>";
 
   const realPass = "s3cr3tP@ssw0rd!";
   let extracted = "";
