@@ -1,101 +1,16 @@
-# SQL Injection 실습 랩
+# SQL Injection 실습
 
-**직접 공격해보고, 방어 방법을 비교하며 배우는 SQL 인젝션 교육 자료**
+SQL 인젝션 공부하면서 직접 공격도 해보고 싶어서 만든 프로젝트예요.
 
-한국어로 작성된 실습 중심의 SQL Injection 학습 랩입니다.
+Python Flask로 간단한 웹 앱을 하나 만들었고, 로그인이나 검색 같은 곳에 실제로 쿼리를 날리는 부분을 일부러 취약하게 짰습니다. 안전하게 짜는 방법(PreparedStatement)도 같이 넣어서 비교하면서 볼 수 있게 했어요.
 
----
+JSP 버전도 있어서 Tomcat에서 MySQL 연결해서 테스트 해볼 수 있습니다.
 
-## 🚀 빠르게 시작하기
+## 어떻게 시작하나요?
 
-| 방법 | 설명 | 링크/위치 |
-|------|------|----------|
-| **가장 쉬움** | 설치 없이 브라우저에서 바로 실습 | `browser-simulator.html` |
-| **강력 추천** | Python으로 실제 DB에 공격하기 | `python/vulnerable_app.py` |
-| Tomcat 환경 | JSP + JDBC 실습 | `jsp/` 폴더 |
+제일 쉬운 건 browser-simulator.html 파일을 그냥 열어보는 거예요. 아무것도 설치 안 해도 바로 UNION이나 로그인 우회 테스트가 됩니다.
 
-자세한 시작 방법은 **[START_HERE.md](START_HERE.md)** 를 열어보세요.
-
----
-
-## 이 자료에서 배울 수 있는 것
-
-- Classic 인증 우회 (`' OR 1=1 --`)
-- UNION SELECT를 이용한 데이터 추출
-- Boolean-based / Time-based Blind SQL Injection
-- Second Order SQL Injection
-- **취약한 코드 vs 안전한 코드** 직접 비교 (PreparedStatement)
-
----
-
-## 저장소 구조
-
-```
-sql-injection-lab/
-├── browser-simulator.html     # 설치 없이 바로 하는 시뮬레이터
-├── START_HERE.md              # 처음 보는 사람을 위한 가이드
-├── payloads-cheatsheet.md     # 주요 공격 페이로드 모음
-├── python/
-│   ├── vulnerable_app.py      # ← 여기서 실제 공격 연습
-│   └── secure_app.py          # 안전한 버전
-└── jsp/
-    ├── vuln-*.jsp             # 취약한 JSP 예제
-    └── secure-*.jsp           # PreparedStatement 적용 예제
-```
-
----
-
-## 주의사항
-
-> **이 자료는 교육 목적으로만 만들어졌습니다.**
-> 실제 서비스나 허가받지 않은 시스템에는 절대 사용하지 마세요.
-
----
-
-## 상세 가이드
-
-아래는 기존 상세 설명입니다.
-
----
-
-## 1. SQL Injection이란?
-
-SQL Injection은 **사용자 입력값이 제대로 필터링되지 않은 채로 SQL 쿼리 문자열에 직접 삽입**될 때 발생하는 취약점입니다.
-
-### 왜 위험한가?
-
-공격자가 SQL 문법을 조작할 수 있게 되어 다음과 같은 공격이 가능해집니다:
-
-| 공격 유형           | 설명                                      | 영향                          |
-|---------------------|-------------------------------------------|-------------------------------|
-| 인증 우회           | `admin' -- ` 로 비밀번호 없이 로그인      | 계정 탈취                     |
-| 데이터 유출         | UNION SELECT로 다른 테이블 데이터 추출    | 개인정보, 비밀번호 유출       |
-| 데이터 변조/삭제    | UPDATE, DELETE, DROP TABLE                | 데이터 파괴                   |
-| Blind 추출          | 참/거짓, 시간 지연으로 한 글자씩 추출     | 매우 은밀한 데이터 탈취       |
-| Second Order        | 저장된 값을 나중에 실행                   | 지연 공격, 로그 우회          |
-| RCE (일부 환경)     | xp_cmdshell, INTO OUTFILE 등              | 서버 장악                     |
-
----
-
-## 2. SQL Injection의 종류
-
-### 2.1 In-band SQLi (가장 흔함)
-- **Error-based**: 에러 메시지를 통해 데이터 추출
-- **Union-based**: UNION SELECT로 결과 집합에 다른 테이블 데이터 추가
-
-### 2.2 Blind SQLi (가장 은밀함)
-- **Boolean-based**: 참/거짓에 따라 페이지 응답이 달라짐
-- **Time-based**: `SLEEP(3)`, `BENCHMARK()` 등으로 응답 시간을 이용
-
-### 2.3 Second-order SQLi
-- 입력 시점에는 공격이 일어나지 않음
-- 나중에 그 값이 다른 쿼리에 사용될 때 공격 발동
-
----
-
-## 3. 실습 환경 구성
-
-### 방법 A: Python Flask + SQLite (가장 추천)
+Python으로 제대로 실습하고 싶으면:
 
 ```powershell
 cd python
@@ -103,28 +18,22 @@ python db_init.py
 python vulnerable_app.py
 ```
 
-### 방법 B: JSP + MySQL
-`db_setup_mysql.sql` 실행 후 `jsp/` 폴더의 파일들을 사용하세요.
+http://127.0.0.1:5000 에서 열리면 로그인, 검색, 유저 조회 같은 페이지에서 페이로드를 넣어보세요.
 
-### 방법 C: 브라우저 시뮬레이터
-`browser-simulator.html`을 그대로 열어보세요.
+secure_app.py 를 5001 포트로 띄워놓고 같이 보면 취약한 부분이 어디인지 바로 느껴집니다.
 
----
+## 들어있는 내용
 
-## 5. 방어 방법 (가장 중요)
+- 로그인 폼에서 admin' -- 같은 걸로 우회하기
+- 검색에서 UNION SELECT 로 다른 테이블 데이터 가져오기
+- id 값으로 Boolean blind, time based blind 테스트
+- 댓글에 악성 쿼리를 저장해두고 나중에 실행되는 second order
+- 그리고 PreparedStatement 로 제대로 막은 버전
 
-**최선의 방어는 PreparedStatement**입니다.
+payloads-cheatsheet.md 에 자주 쓰는 페이로드들 정리해놨습니다.
 
-```java
-// 나쁨 (절대 이렇게 하지 마세요)
-String sql = "SELECT * FROM users WHERE id = " + id;
+## 주의
 
-// 좋음
-String sql = "SELECT * FROM users WHERE id = ?";
-PreparedStatement pstmt = conn.prepareStatement(sql);
-pstmt.setInt(1, id);
-```
+이건 공부할 때 쓰라고 취약하게 만든 거라, 실제로 돌아가는 서비스에는 절대 쓰면 안 됩니다.
 
----
-
-**이 실습 자료는 교육 목적으로만 사용하세요.**
+필요하면 cli_simulator.py 로 웹 없이도 간단히 테스트 해볼 수 있어요.
