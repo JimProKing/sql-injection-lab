@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SQL Injection Browser Simulator (Zero Setup)</title>
+<style>
+body { font-family: monospace; max-width: 1100px; margin: 30px auto; background: #fafafa; }
+h1 { color: #222; }
+.section { background: white; border: 1px solid #ccc; padding: 20px; margin-bottom: 25px; border-radius: 6px; }
+input, textarea { font-family: monospace; font-size: 15px; padding: 6px; }
+pre { background: #1e1e1e; color: #0f0; padding: 14px; overflow-x: auto; border-radius: 4px; }
+.result { background: #f0f8ff; padding: 12px; border-left: 4px solid #0066cc; margin-top: 10px; }
+.bad { background: #fff0f0; border-left-color: #cc0000; }
+.good { background: #f0fff0; border-left-color: #009900; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #999; padding: 6px 10px; text-align: left; }
+th { background: #eee; }
+</style>
+</head>
+<body>
+
+<h1>SQL Injection Interactive Simulator</h1>
+<p>서버 없이 브라우저에서 직접 SQL 인젝션 동작을 시뫄레이션합니다. 실제 DB가 아니라 JavaScript로 흙내 냅니다.</p>
+
+<!-- ==================== LOGIN ==================== -->
+<div class="section">
+  <h2>1. 로그인 폼 (Classic Authentication Bypass)</h2>
+  
+  <div style="display:flex; gap:40px">
+    <div style="flex:1">
+      <h4>VULNERABLE 코드</h4>
+      <pre>query = "SELECT * FROM users 
+  WHERE username = '" + u + "' 
+    AND password = '" + p + "'"</pre>
+
+      <p>Username: <input id="login-user" value="admin" size="20"></p>
+      <p>Password: <input id="login-pass" value="wrongpass" size="20"></p>
+      <button onclick="simulateLogin()">Login 실행</button>
+      <button onclick="tryPayload('admin\\' -- ')">admin' --  페이로드 사용</button>
+      <button onclick="tryPayload('admin\\' OR \\'1\\'=\\'1\\' -- ')">OR 1=1 페이로드</button>
+    </div>
+    <div style="flex:1">
+      <h4>실행 결과</h4>
+      <pre id="login-query"></pre>
+      <div id="login-result" class="result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== UNION ==================== -->
+<div class="section">
+  <h2>2. 검색 (UNION-based Data Exfiltration)</h2>
+  
+  <div style="display:flex; gap:40px">
+    <div style="flex:1">
+      <h4>VULNERABLE 코드</h4>
+      <pre>query = "SELECT id, name, price 
+  FROM products 
+ WHERE name LIKE '%" + keyword + "%'"</pre>
+
+      <p>검색어: <input id="search-q" value="mouse" size="30"></p>
+      <button onclick="simulateSearch()">검색</button>
+      <br><br>
+      <strong>추천 UNION 페이로드:</strong><br>
+      <button onclick="tryUnionPayload('%\\' UNION SELECT 1, username, password FROM users -- ')">users 테이블 덤프</button>
+      <button onclick="tryUnionPayload('%\\' UNION SELECT id, sqlite_version(), 1 FROM sqlite_master -- ')">스키마 정보</button>
+    </div>
+    <div style="flex:1">
+      <h4>실행된 쿼리 + 결과</h4>
+      <pre id="search-query"></pre>
+      <div id="search-result"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== BOOLEAN BLIND ==================== -->
+<div class="section">
+  <h2>3. Boolean-based Blind (참/거짓으로 한 글자씩 추출)</h2>
+  
+  <div>
+    <p>원래 쿼리: <code>SELECT * FROM users WHERE id = [입력]</code></p>
+    <p>입력값: <input id="blind-id" value="1" size="40"> 
+       <button onclick="simulateBlind()">실행</button></p>
+
+    <p><strong>자동 추출 데모 (admin 비밀번호 첫 글자 맞추기):</strong></p>
+    <button onclick="autoExtract()">admin 비밀번호 1글자씩 자동 추출 (시뫄레이션)</button>
+    <div id="blind-log" style="background:#222;color:#0f0;padding:10px;margin-top:10px;height:120px;overflow:auto;font-size:13px"></div>
+  </div>
+</div>
+
+<!-- ==================== SECURE COMPARISON ==================== -->
+<div class="section">
+  <h2>4. Secure vs Vulnerable 비교</h2>
+  <table>
+    <tr><th width="50%">VULNERABLE (나쁨 예)</th><th>SECURE (좋은 예)</th></tr>
+    <tr>
+      <td class="bad">
+        <pre>// 절대 이렇게 하지 마세요
+String sql = "SELECT * FROM users " +
+  "WHERE id = " + request.getParameter("id");
+
+Statement stmt = conn.createStatement();
+ResultSet rs = stmt.executeQuery(sql);</pre>
+      </td>
+      <td class="good">
+        <pre>// 항상 이렇게 하세요
+String sql = "SELECT * FROM users WHERE id = ?";
+
+PreparedStatement pstmt = conn.prepareStatement(sql);
+pstmt.setInt(1, Integer.parseInt(id));
+ResultSet rs = pstmt.executeQuery();</pre>
+      </td>
+    </tr>
+  </table>
+  <p><strong>핵심:</strong> 따옴표, 세미콜론, OR, UNION, -- 등이 "데이터"로만 취급됩니다. 쿼리 문법 구조를 변경할 수 없습니다.</p>
+</div>
+
+<script>
+// Fake database
+const DB = {
+  users: [
+    {id:1, username:'admin', password:'s3cr3tP@ssw0rd!', email:'admin@cre.com', role:'admin', secret_note:'FLAG{admin_secret_2026}'},
+    {id:2, username:'crehacktive', password:'P@ssw0rd123', email:'cre@cre.com', role:'user', secret_note:'blue is my color'},
+    {id:3, username:'guest', password:'guest123', email:'g@ex.com', role:'user', secret_note:''},
+  ],
+  products: [
+    {id:1, name:'Wireless Mouse', price:25000, description:'고성능 무선 마우스'},
+    {id:2, name:'Mechanical Keyboard', price:89000, description:'청축 기계식 키보드 RGB'},
+    {id:3, name:'USB-C Hub', price:32000, description:'7-in-1 허브'},
+  ]
+};
+
+function simulateLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+
+  // VULNERABLE construction (exactly what a real vulnerable app does)
+  const query = `SELECT * FROM users WHERE username = '${u}' AND password = '${p}'`;
+  document.getElementById('login-query').textContent = query;
+
+  // Naive JS "execution" that actually runs the injection (for demo)
+  let matched = [];
+  try {
+    // This is intentionally naive to demonstrate what happens
+    const fakeSQL = (username, password) => {
+      // We simulate what the DB would return after the injected query
+      // For demo we just check if the constructed condition would be true
+      return DB.users.filter(user => {
+        // Extremely simplified "SQL" evaluator for the demo
+        const cond = `(username == '${username}' && password == '${password}')`;
+        // Direct eval for simulation only - never do this in real code
+        try {
+          // We manually handle common injection patterns for the demo
+          if (username.includes("' --") || username.includes("'--")) {
+            const realUser = username.split("'")[0];
+            const found = DB.users.find(x => x.username === realUser);
+            return !!found;
+          }
+          if (username.includes("' OR '1'='1") || username.includes("OR 1=1")) {
+            return true; // whole table would be returned
+          }
+          if (username.includes("' AND password LIKE '")) {
+            // crude simulation
+            const parts = username.split("'");
+            const targetUser = parts[0];
+            const like = parts[parts.length-2] || '';
+            const u = DB.users.find(x => x.username === targetUser);
+            return u && u.password.startsWith(like.replace('%',''));
+          }
+          return user.username === username && user.password === password;
+        } catch(e){ return false; }
+      });
+    };
+
+    matched = fakeSQL(u, p);
+  } catch(e){}
+
+  const out = document.getElementById('login-result');
+  if (matched.length > 0) {
+    out.className = 'result';
+    let html = `<strong>로그인 성공 (총 ${matched.length}명 반환될 수 있음)</strong><br>`;
+    matched.forEach(m => {
+      html += `• ${m.username} | ${m.role} | secret: ${m.secret_note}<br>`;
+    });
+    out.innerHTML = html;
+  } else {
+    out.className = 'result bad';
+    out.innerHTML = '로그인 실패';
+  }
+}
+
+function tryPayload(payload) {
+  document.getElementById('login-user').value = payload;
+  document.getElementById('login-pass').value = 'anything';
+  simulateLogin();
+}
+
+function simulateSearch() {
+  const q = document.getElementById('search-q').value;
+  const query = `SELECT id, name, price, description FROM products WHERE name LIKE '%${q}%' OR description LIKE '%${q}%'`;
+  document.getElementById('search-query').textContent = query;
+
+  // Very naive simulation that supports simple UNION
+  let results = [];
+  const lowerQ = q.toLowerCase();
+
+  if (lowerQ.includes("union select")) {
+    // Parse very simple UNION ... FROM users
+    if (lowerQ.includes("from users")) {
+      results = DB.users.map(u => ({
+        id: u.id,
+        name: u.username,
+        price: u.password,           // password leaked into price column
+        description: u.secret_note || u.email
+      }));
+    } else {
+      results = [{id:1, name:'UNION result', price:'(injected)', description:'column count mismatch may occur in real DB'}];
+    }
+  } else {
+    // normal LIKE
+    results = DB.products.filter(p =>
+      p.name.toLowerCase().includes(q.toLowerCase()) ||
+      p.description.toLowerCase().includes(q.toLowerCase())
+    );
+  }
+
+  let html = '<table><tr><th>id</th><th>name</th><th>price</th><th>desc</th></tr>';
+  results.forEach(r => {
+    html += `<tr><td>${r.id}</td><td>${r.name}</td><td>${r.price}</td><td>${r.description}</td></tr>`;
+  });
+  html += '</table>';
+  document.getElementById('search-result').innerHTML = html;
+}
+
+function tryUnionPayload(payload) {
+  document.getElementById('search-q').value = payload;
+  simulateSearch();
+}
+
+function simulateBlind() {
+  const val = document.getElementById('blind-id').value;
+  const query = `SELECT * FROM users WHERE id = ${val}`;
+  
+  // Evaluate truthiness for demo
+  let isTrue = false;
+  let matched = [];
+
+  if (val.includes("AND 1=1") || val.includes("AND '1'='1")) isTrue = true;
+  if (val.includes("AND 1=2") || val.includes("AND '1'='2")) isTrue = false;
+
+  // crude admin password char check simulation
+  if (val.includes("SUBSTR") || val.includes("substr")) {
+    // very rough: check if first char of admin password == 's'
+    if (val.includes("'s'") || val.includes('"s"')) {
+      isTrue = true;
+    }
+  }
+
+  if (isTrue || (!val.includes("AND") && !val.includes("OR"))) {
+    matched = DB.users.filter(u => u.id == parseInt(val) || val == '1');
+  }
+
+  const out = document.getElementById('blind-log');
+  out.innerHTML += `Query: ${query}<br>`;
+  out.innerHTML += `→ 결과 ${matched.length > 0 ? '있음 (참)' : '없음 (거짓)'}<br><br>`;
+  out.scrollTop = out.scrollHeight;
+}
+
+function autoExtract() {
+  const log = document.getElementById('blind-log');
+  log.innerHTML = "admin 비밀번호 자동 추출 시뫄레이션 시작...<br>";
+
+  const realPass = "s3cr3tP@ssw0rd!";
+  let extracted = "";
+
+  for (let i = 0; i < realPass.length; i++) {
+    const ch = realPass[i];
+    const cond = `1 AND (SELECT SUBSTR(password,${i+1},1) FROM users WHERE username='admin') = '${ch}'`;
+    const query = `SELECT * FROM users WHERE id = ${cond}`;
+
+    log.innerHTML += `위치 ${i+1}: '${ch}' → 참<br>`;
+    extracted += ch;
+
+    if (i > 4) { // stop early for demo
+      log.innerHTML += `<strong>추출된 비밀번호 (일부): ${extracted}...</strong><br>`;
+      break;
+    }
+  }
+  log.innerHTML += `<br><strong>완료 (실제로는 수십~ 수백 번의 요청이 필요)</strong><br>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+// Initial demo values
+window.onload = function() {
+  document.getElementById('login-user').value = "admin";
+  document.getElementById('login-pass').value = "wrong";
+};
+</script>
+
+</body>
+</html>

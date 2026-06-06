@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SQL Injection Lab - 메인</title>
+<style>
+body { font-family: system-ui, monospace; max-width: 860px; margin: 40px auto; line-height: 1.7; }
+h1 { border-bottom: 3px solid #333; padding-bottom: 10px; }
+.card { border: 1px solid #ccc; padding: 16px 20px; margin: 15px 0; border-radius: 6px; background: #fafafa; }
+a { text-decoration: none; color: #0066cc; }
+a:hover { text-decoration: underline; }
+.badge { background: #c00; color: white; font-size: 12px; padding: 2px 8px; border-radius: 3px; }
+.badge.green { background: #0a0; }
+</style>
+</head>
+<body>
+
+<h1>SQL Injection Lab</h1>
+<p><strong>직접 해보면서 배우는 SQL 인젝션 실습 환경</strong></p>
+
+<h2>빠른 시작</h2>
+
+<div class="card">
+  <h3>1. 브라우서만으로 실습 (가장 쉽음, 설치 필요 없음)</h3>
+  <p><a href="browser-simulator.html">browser-simulator.html 열기</a></p>
+  <p>서버 없이 바로 UNION, 로그인 우회, Blind 시뫄레이션을 체험할 수 있습니다.</p>
+</div>
+
+<div class="card">
+  <h3>2. Python Flask 실습 (강력 추천)</h3>
+  <pre>cd python
+python db_init.py
+python vulnerable_app.py</pre>
+  <p>그 후 <a href="http://127.0.0.1:5000" target="_blank">http://127.0.0.1:5000</a> 접속</p>
+  <p>Secure 비교 버전: <code>python secure_app.py</code> → <a href="http://127.0.0.1:5001" target="_blank">http://127.0.0.1:5001</a></p>
+</div>
+
+<div class="card">
+  <h3>3. JSP + MySQL 실습 (Tomcat 환경)</h3>
+  <p>먼저 MySQL에서 DB를 생성하세요:</p>
+  <pre>mysql -u root -p &lt; db_setup_mysql.sql</pre>
+  <p>그 후 <code>sqli-lab/jsp/</code> 안의 파일들을 Tomcat의 <code>webapps/ROOT/sqli/</code> 로 복사하고 접속:</p>
+  <ul>
+    <li><a href="/sqli/vuln-login.jsp">/sqli/vuln-login.jsp</a> <span class="badge">Vulnerable</span></li>
+    <li><a href="/sqli/vuln-search.jsp">/sqli/vuln-search.jsp</a> <span class="badge">Vulnerable</span></li>
+    <li><a href="/sqli/vuln-detail.jsp">/sqli/vuln-detail.jsp</a> <span class="badge">Vulnerable</span></li>
+    <li><a href="/sqli/secure-login.jsp">/sqli/secure-login.jsp</a> <span class="badge green">Secure</span></li>
+  </ul>
+</div>
+
+<h2>학습 자료</h2>
+<ul>
+  <li><a href="README.md">README.md</a> — 이론 + 상세 설명 + 방어 방법</li>
+  <li><a href="payloads-cheatsheet.md">payloads-cheatsheet.md</a> — 주요 페이로드 모음</li>
+  <li><a href="python/cli_simulator.py">python/cli_simulator.py</a> — 웹 없이 CLI로 빠르게 실습</li>
+</ul>
+
+<h2>구조</h2>
+<pre>
+sqli-lab/
+├── README.md
+├── payloads-cheatsheet.md
+├── index.html
+├── browser-simulator.html
+├── db_setup_mysql.sql
+├── python/
+│   ├── vulnerable_app.py
+│   ├── secure_app.py
+│   ├── cli_simulator.py
+│   ├── db_init.py
+│   └── requirements.txt
+└── jsp/
+    ├── vuln-login.jsp
+    ├── vuln-search.jsp
+    ├── vuln-detail.jsp
+    ├── secure-login.jsp
+    └── secure-detail.jsp
+</pre>
+
+<hr>
+<p style="color:#666">이 자료는 교육 목적으로만 사용하세요. 실제 시스템에는 절대 적용하지 마십시오.</p>
+
+</body>
+</html>
